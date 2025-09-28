@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расписание ЮУМК</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 5px;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border: none;
+            background: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .tab-button.active {
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Стили для расписания */
+        .date-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .date-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 70px;
+        }
+        
+        .date-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .week-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .week-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            background: #e9ecef;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
+        .week-btn.active {
+            background: #28a745;
+            color: white;
+        }
+        
+        .lesson-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .lesson-time {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .lesson-subject {
+            font-weight: 600;
+            margin-bottom: 3px;
+            font-size: 16px;
+        }
+        
+        .lesson-details {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .no-lessons {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+            font-style: italic;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .day-header {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        /* Стили для домашних заданий */
+        .homework-item {
+            background: #fff3cd;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .homework-subject {
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 5px;
+        }
+        
+        .homework-task {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .homework-date {
+            font-size: 12px;
+            color: #997404;
+        }
+        
+        .add-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            width: 100%;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        /* Стили для ссылок */
+        .link-button {
+            display: block;
+            background: #17a2b8;
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        /* Формы */
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .input-group input, .input-group textarea, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        
+        .input-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Расписание ЮУМК</h1>
+            <p>Ваш персональный помощник</p>
+        </div>
+        
+        <div class="card">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="showTab('schedule')">📅 Расписание</button>
+                <button class="tab-button" onclick="showTab('homework')">📝 ДЗ</button>
+                <button class="tab-button" onclick="showTab('links')">🔗 Ссылки</button>
+            </div>
+            
+            <!-- Вкладка расписания -->
+            <div id="schedule" class="tab-content active">
+                <div class="week-selector">
+                    <button class="week-btn active" onclick="selectWeek('current')">Текущая</button>
+                    <button class="week-btn" onclick="selectWeek('next')">Следующая</button>
+                </div>
+                
+                <div class="date-selector">
+                    <button class="date-btn active" onclick="selectDay(0)">Сегодня</button>
+                    <button class="date-btn" onclick="selectDay(1)">Завтра</button>
+                    <button class="date-btn" onclick="selectDay(2)">Послезавтра</button>
+                    <button class="date-btn" onclick="showWeekView()">Неделя</button>
+                </div>
+                
+                <div class="day-header" id="day-title">Загрузка...</div>
+                
+                <div id="schedule-content" class="loading">
+                    Загрузка расписания...
+                </div>
+                
+                <!-- Вид на всю неделю -->
+                <div id="week-view" style="display: none;">
+                    <div style="text-align: center; margin-bottom: 15px; font-weight: 600;">
+                        Расписание на неделю
+                    </div>
+                    <div id="week-content"></div>
+                    <button class="date-btn" onclick="showDayView()" style="margin-top: 15px; background: #6c757d; color: white;">
+                        ← Назад к дню
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Вкладка домашних заданий -->
+            <div id="homework" class="tab-content">
+                <h3 style="margin-bottom: 15px;">Мои задания</h3>
+                <div id="homework-list">
+                    <!-- Список ДЗ будет здесь -->
+                </div>
+                <button class="add-button" onclick="showAddHomework()">+ Добавить задание</button>
+                
+                <!-- Форма добавления ДЗ -->
+                <div id="add-homework-form" style="display: none;">
+                    <div class="input-group">
+                        <label>Предмет:</label>
+                        <input type="text" id="homework-subject" placeholder="Например: Математика">
+                    </div>
+                    <div class="input-group">
+                        <label>Задание:</label>
+                        <textarea id="homework-task" placeholder="Опишите задание..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Срок сдачи:</label>
+                        <input type="date" id="homework-deadline">
+                    </div>
+                    <button class="add-button" onclick="addHomework()">💾 Сохранить</button>
+                    <button class="add-button" style="background: #6c757d;" onclick="hideAddHomework()">❌ Отмена</button>
+                </div>
+            </div>
+            
+            <!-- Вкладка ссылок -->
+            <div id="links" class="tab-content">
+                <a href="https://is.suvc.ru" class="link-button" target="_blank">🌐 Сайт колледжа</a>
+                <a href="https://is.suvc.ru/blocks/manage_groups/website/view1.php" class="link-button" target="_blank">📊 Расписание онлайн</a>
+                <a href="https://edu.suvc.ru" class="link-button" target="_blank">🎓 Электронное обучение</a>
+                <a href="https://library.suvc.ru" class="link-button" target="_blank">📚 Библиотека</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Текущее состояние
+        let currentDayOffset = 0;
+        let currentWeek = 'current';
+        let homeworkList = JSON.parse(localStorage.getItem('homeworkList')) || [];
+        
+        // Инициализация Telegram Web App
+        let tg = window.Telegram.WebApp;
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            tg.expand();
+        }
+        
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            loadScheduleForDay(0, 'current');
+            loadHomework();
+            
+            // Установить минимальную дату как сегодня
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('homework-deadline').min = today;
+        });
+        
+        // Функции для вкладок
+        function showTab(tabName) {
+            // Скрыть все вкладки
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Показать выбранную вкладку
+            document.getElementById(tabName).classList.add('active');
+            
+            // Обновить кнопки
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Загрузить данные для вкладки
+            if (tabName === 'schedule') {
+                loadScheduleForDay(currentDayOffset, currentWeek);
+            } else if (tabName === 'homework') {
+                loadHomework();
+            }
+        }
+        
+        // Функции расписания
+        function selectDay(dayOffset) {
+            currentDayOffset = dayOffset;
+            
+            document.querySelectorAll('.date-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            showDayView();
+            loadScheduleForDay(dayOffset, currentWeek);
+        }
+        
+        function selectWeek(weekType) {
+            currentWeek = weekType;
+            
+            document.querySelectorAll('.week-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadScheduleForDay(currentDayOffset, currentWeek);
+        }
+        
+        function showDayView() {
+            document.getElementById('week-view').style.display = 'none';
+            document.getElementById('schedule-content').style.display = 'block';
+            document.getElementById('day-title').style.display = 'block';
+        }
+        
+        function showWeekView() {
+            document.getElementById('schedule-content').style.display = 'none';
+            document.getElementById('day-title').style.display = 'none';
+            document.getElementById('week-view').style.display = 'block';
+            loadWeeklySchedule();
+        }
+        
+        function loadScheduleForDay(dayOffset, weekType) {
+            const scheduleContent = document.getElementById('schedule-content');
+            const dayTitle = document.getElementById('day-title');
+            
+            scheduleContent.innerHTML = '<div class="loading">Загрузка...</div>';
+            
+            setTimeout(() => {
+                const schedule = generateTestSchedule(dayOffset, weekType);
+                const dateText = getDateText(dayOffset, weekType);
+                
+                dayTitle.textContent = dateText;
+                
+                if (schedule.length === 0) {
+                    scheduleContent.innerHTML = '<div class="no-lessons">🎉 Пар нет!</div>';
+                    return;
+                }
+                
+                scheduleContent.innerHTML = schedule.map(lesson => `
+                    <div class="lesson-item">
+                        <div class="lesson-time">${lesson.time}</div>
+                        <div class="lesson-subject">${lesson.subject}</div>
+                        <div class="lesson-details">👤 ${lesson.teacher} | 🏫 ${lesson.room}</div>
+                        ${lesson.subgroups ? lesson.subgroups.map(subgroup => `
+                            <div class="lesson-details" style="margin-top: 5px; margin-left: 10px;">
+                                👥 ${subgroup.teacher} | 🏫 ${subgroup.room}
+                            </div>
+                        `).join('') : ''}
+                    </div>
+                `).join('');
+            }, 500);
+        }
+        
+        function loadWeeklySchedule() {
+            const weekContent = document.getElementById('week-content');
+            weekContent.innerHTML = '<div class="loading">Загрузка недельного расписания...</div>';
+            
+            setTimeout(() => {
+                const weekSchedule = generateTestWeekSchedule();
+                
+                weekContent.innerHTML = Object.entries(weekSchedule).map(([dayName, lessons]) => `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-weight: 600; margin-bottom: 10px; color: #667eea;">${dayName}</div>
+                        ${lessons.length === 0 ? 
+                            '<div class="no-lessons" style="padding: 10px;">Нет пар</div>' :
+                            lessons.map(lesson => `
+                                <div style="background: #f8f9fa; border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+                                    <div style="font-weight: 600; font-size: 12px; color: #667eea;">${lesson.time}</div>
+                                    <div style="font-size: 14px;">${lesson.subject}</div>
+                                    <div style="font-size: 12px; color: #666;">${lesson.teacher}</div>
+                                </div>
+                            `).join('')
+                        }
+                    </div>
+                `).join('');
+            }, 500);
+        }
+        
+        // Функции домашних заданий
+        function showAddHomework() {
+            document.getElementById('add-homework-form').style.display = 'block';
+        }
+        
+        function hideAddHomework() {
+            document.getElementById('add-homework-form').style.display = 'none';
+            document.getElementById('homework-subject').value = '';
+            document.getElementById('homework-task').value = '';
+            document.getElementById('homework-deadline').value = '';
+        }
+        
+        function addHomework() {
+            const subject = document.getElementById('homework-subject').value;
+            const task = document.getElementById('homework-task').value;
+            const deadline = document.getElementById('homework-deadline').value;
+            
+            if (subject && task && deadline) {
+                const newHomework = {
+                    id: Date.now(),
+                    subject: subject,
+                    task: task,
+                    deadline: deadline,
+                    createdAt: new Date().toISOString()
+                };
+                
+                homeworkList.push(newHomework);
+                localStorage.setItem('homeworkList', JSON.stringify(homeworkList));
+                loadHomework();
+                hideAddHomework();
+                alert('✅ Задание добавлено!');
+            } else {
+                alert('❌ Заполните все поля!');
+            }
+        }
+        
+        function loadHomework() {
+            const homeworkListElement = document.getElementById('homework-list');
+            
+            if (homeworkList.length === 0) {
+                homeworkListElement.innerHTML = '<p style="text-align: center; color: #666;">Нет домашних заданий</p>';
+                return;
+            }
+            
+            homeworkListElement.innerHTML = homeworkList.map(homework => `
+                <div class="homework-item">
+                    <div class="homework-subject">${homework.subject}</div>
+                    <div class="homework-task">${homework.task}</div>
+                    <div class="homework-date">📅 До: ${new Date(homework.deadline).toLocaleDateString('ru-RU')}</div>
+                    <button class="delete-btn" onclick="deleteHomework(${homework.id})">Удалить</button>
+                </div>
+            `).join('');
+        }
+        
+        function deleteHomework(id) {
+            if (confirm('Удалить это задание?')) {
+                homeworkList = homeworkList.filter(hw => hw.id !== id);
+                localStorage.setItem('homeworkList', JSON.stringify(homeworkList));
+                loadHomework();
+            }
+        }
+        
+        // Тестовые данные
+        function generateTestSchedule(dayOffset, weekType) {
+            const schedules = {
+                0: [
+                    { time: "08:30-10:10", subject: "Криминалистика", teacher: "Шваб Е.В.", room: "11404" },
+                    { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А.", room: "11406" },
+                    { time: "12:40-14:20", subject: "ИТ в ПД", teacher: "Гирфанова М.С.", room: "13208", 
+                      subgroups: [{ teacher: "Острогляд Е.Е.", room: "13204" }]}
+                ],
+                1: [
+                    { time: "08:30-10:10", subject: "ГП и ГПр", teacher: "Велин Д.А.", room: "11406" },
+                    { time: "10:20-12:20", subject: "Физкультура", teacher: "Райсвих В.К.", room: "12201" },
+                    { time: "12:40-14:20", subject: "ТС подготовка", teacher: "Шваб Е.В.", room: "11404" }
+                ],
+                2: [
+                    { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А.", room: "11406" },
+                    { time: "12:40-14:20", subject: "Уголовное право", teacher: "Пургина О.А.", room: "11406" }
+                ]
+            };
+            
+            return schedules[dayOffset] || [];
+        }
+        
+        function generateTestWeekSchedule() {
+            return {
+                "Понедельник": [
+                    { time: "11:00-12:20", subject: "Уголовное право", teacher: "Пургина О.А." },
+                    { time: "12:40-14:00", subject: "ТС подготовка", teacher: "Шваб Е.В." }
+                ],
+                "Вторник": [
+                    { time: "08:30-10:10", subject: "ГП и ГПр", teacher: "Велин Д.А." },
+                    { time: "10:20-12:20", subject: "Физкультура", teacher: "Райсвих В.К." }
+                ],
+                "Среда": [
+                    { time: "08:30-10:10", subject: "Криминалистика", teacher: "Шваб Е.В." },
+                    { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А." }
+                ],
+                "Четверг": [
+                    { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А." }
+                ],
+                "Пятница": [
+                    { time: "10:20-12:20", subject: "ИТ в ПД", teacher: "Гирфанова М.С." }
+                ],
+                "Суббота": []
+            };
+        }
+        
+        function getDateText(dayOffset, weekType) {
+            const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+            const today = new Date();
+            const targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + dayOffset);
+            
+            const dayName = days[targetDate.getDay()];
+            const dateStr = targetDate.toLocaleDateString('ru-RU');
+            const weekText = weekType === 'current' ? 'текущая' : 'следующая';
+            
+            return `${dayName}, ${dateStr} (${weekText} неделя)`;
+        }
+    </script>
+</body>
+</html>
