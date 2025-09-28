@@ -71,6 +71,72 @@
             display: block;
         }
         
+        /* Стили для выбора группы */
+        .selector-container {
+            margin-bottom: 20px;
+        }
+        
+        .selector-step {
+            display: none;
+        }
+        
+        .selector-step.active {
+            display: block;
+        }
+        
+        .selector-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .selector-buttons {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .selector-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .selector-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .selector-btn.complex {
+            background: #e7f3ff;
+            border-left: 4px solid #1890ff;
+        }
+        
+        .selector-btn.course {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+        }
+        
+        .selector-btn.group {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+        }
+        
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
         /* Стили для расписания */
         .date-selector {
             display: flex;
@@ -265,19 +331,15 @@
             font-size: 16px;
         }
 
-        .no-group-warning {
-            background: #fff2e8;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            text-align: center;
-            border-left: 4px solid #fa541c;
-        }
-
-        .warning-text {
-            color: #fa541c;
-            font-weight: 600;
-            margin-bottom: 10px;
+        .change-group-btn {
+            background: #ffc107;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 15px;
+            margin-top: 8px;
+            cursor: pointer;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -289,17 +351,36 @@
         </div>
         
         <div class="card">
-            <!-- Блок информации о группе -->
+            <!-- Информация о выбранной группе -->
             <div id="group-info" class="group-info" style="display: none;">
                 <div class="group-name" id="current-group-name"></div>
                 <div style="font-size: 12px; color: #666; margin-top: 5px;">Ваша текущая группа</div>
+                <button class="change-group-btn" onclick="showGroupSelector()">✏️ Сменить группу</button>
             </div>
 
-            <!-- Блок предупреждения если группа не выбрана -->
-            <div id="no-group-warning" class="no-group-warning" style="display: none;">
-                <div class="warning-text">⚠️ Группа не выбрана</div>
-                <div style="font-size: 12px; color: #666;">
-                    Вернитесь в бота и выберите группу для просмотра расписания
+            <!-- Селектор группы -->
+            <div id="group-selector" class="selector-container" style="display: none;">
+                <div class="selector-step active" id="step-complex">
+                    <div class="selector-title">🏛️ Выберите комплекс</div>
+                    <div class="selector-buttons" id="complex-buttons">
+                        <!-- Кнопки комплексов будут здесь -->
+                    </div>
+                </div>
+                
+                <div class="selector-step" id="step-course">
+                    <div class="selector-title">📚 Выберите курс</div>
+                    <div class="selector-buttons" id="course-buttons">
+                        <!-- Кнопки курсов будут здесь -->
+                    </div>
+                    <button class="back-btn" onclick="backToComplex()">◀️ Назад к комплексам</button>
+                </div>
+                
+                <div class="selector-step" id="step-group">
+                    <div class="selector-title">👥 Выберите группу</div>
+                    <div class="selector-buttons" id="group-buttons">
+                        <!-- Кнопки групп будут здесь -->
+                    </div>
+                    <button class="back-btn" onclick="backToCourse()">◀️ Назад к курсам</button>
                 </div>
             </div>
             
@@ -323,21 +404,12 @@
                     <button class="date-btn" onclick="showWeekView()">Неделя</button>
                 </div>
                 
-                <div class="day-header" id="day-title">Загрузка...</div>
+                <div class="day-header" id="day-title">Выберите группу для просмотра расписания</div>
                 
-                <div id="schedule-content" class="loading">
-                    Загрузка расписания...
-                </div>
-                
-                <!-- Вид на всю неделю -->
-                <div id="week-view" style="display: none;">
-                    <div style="text-align: center; margin-bottom: 15px; font-weight: 600;">
-                        Расписание на неделю
+                <div id="schedule-content">
+                    <div class="no-lessons">
+                        ℹ️ Сначала выберите вашу группу
                     </div>
-                    <div id="week-content"></div>
-                    <button class="date-btn" onclick="showDayView()" style="margin-top: 15px; background: #6c757d; color: white;">
-                        ← Назад к дню
-                    </button>
                 </div>
             </div>
             
@@ -345,7 +417,7 @@
             <div id="homework" class="tab-content">
                 <h3 style="margin-bottom: 15px;">Мои задания</h3>
                 <div id="homework-list">
-                    <!-- Список ДЗ будет здесь -->
+                    <p style="text-align: center; color: #666;">Нет домашних заданий</p>
                 </div>
                 <button class="add-button" onclick="showAddHomework()">+ Добавить задание</button>
                 
@@ -383,174 +455,253 @@
         let currentDayOffset = 0;
         let currentWeek = 'current';
         let homeworkList = JSON.parse(localStorage.getItem('homeworkList')) || [];
-        let userGroupData = null;
+        let userGroup = JSON.parse(localStorage.getItem('userGroup')) || null;
+        
+        // Данные для выбора группы (можно расширить)
+        const complexesData = {
+            "1": { name: "Юридический комплекс", courses: ["1 курс", "2 курс", "3 курс", "4 курс"] },
+            "2": { name: "Транспортно-технологический комплекс", courses: ["1 курс", "2 курс", "3 курс"] },
+            "3": { name: "Металлургический комплекс", courses: ["1 курс", "2 курс", "3 курс"] },
+            "4": { name: "Комплекс строительства и предпринимательства", courses: ["1 курс", "2 курс", "3 курс", "4 курс"] }
+        };
+
+        const groupsData = {
+            "1": {
+                "1 курс": ["Ю-101", "Ю-102", "Ю-103"],
+                "2 курс": ["Ю-201", "Ю-202", "Ю-203"],
+                "3 курс": ["Ю-301", "Ю-302"],
+                "4 курс": ["Ю-401", "Ю-402"]
+            },
+            "2": {
+                "1 курс": ["ТТ-101", "ТТ-102"],
+                "2 курс": ["ТТ-201", "ТТ-202"],
+                "3 курс": ["ТТ-301"]
+            },
+            "3": {
+                "1 курс": ["М-101", "М-102"],
+                "2 курс": ["М-201", "М-202"],
+                "3 курс": ["М-301"]
+            },
+            "4": {
+                "1 курс": ["СП-101", "СП-102", "СП-103"],
+                "2 курс": ["СП-201", "СП-202"],
+                "3 курс": ["СП-301", "СП-302"],
+                "4 курс": ["СП-401"]
+            }
+        };
         
         // Инициализация Telegram Web App
         let tg = window.Telegram.WebApp;
         
-        // Получаем параметры из URL
-        function getUrlParams() {
-            const params = new URLSearchParams(window.location.search);
-            const groupName = params.get('group_name');
-            
-            return {
-                user_id: params.get('user_id'),
-                gr: params.get('gr'),
-                dep: params.get('dep'),
-                group_name: groupName ? decodeURIComponent(groupName) : null,
-                complex_id: params.get('complex_id')
-            };
-        }
-        
         // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', function() {
-            // Получаем данные пользователя из URL
-            userGroupData = getUrlParams();
-            
-            // Обновляем интерфейс в зависимости от наличия данных о группе
-            updateInterfaceForGroup();
-            
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 tg.expand();
             }
             
-            loadScheduleForDay(0, 'current');
+            initComplexes();
             loadHomework();
+            updateGroupDisplay();
             
             // Установить минимальную дату как сегодня
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('homework-deadline').min = today;
         });
         
-        // Обновление интерфейса в зависимости от данных группы
-        function updateInterfaceForGroup() {
+        // Инициализация комплексов
+        function initComplexes() {
+            const container = document.getElementById('complex-buttons');
+            container.innerHTML = '';
+            
+            Object.entries(complexesData).forEach(([id, complex]) => {
+                const button = document.createElement('button');
+                button.className = 'selector-btn complex';
+                button.textContent = complex.name;
+                button.onclick = () => selectComplex(id, complex.name);
+                container.appendChild(button);
+            });
+        }
+        
+        // Выбор комплекса
+        function selectComplex(complexId, complexName) {
+            currentSelection = { complexId, complexName };
+            
+            // Показываем курсы
+            document.getElementById('step-complex').classList.remove('active');
+            document.getElementById('step-course').classList.add('active');
+            
+            const container = document.getElementById('course-buttons');
+            container.innerHTML = '';
+            
+            complexesData[complexId].courses.forEach(course => {
+                const button = document.createElement('button');
+                button.className = 'selector-btn course';
+                button.textContent = course;
+                button.onclick = () => selectCourse(course);
+                container.appendChild(button);
+            });
+        }
+        
+        // Выбор курса
+        function selectCourse(course) {
+            currentSelection.course = course;
+            
+            // Показываем группы
+            document.getElementById('step-course').classList.remove('active');
+            document.getElementById('step-group').classList.add('active');
+            
+            const container = document.getElementById('group-buttons');
+            container.innerHTML = '';
+            
+            groupsData[currentSelection.complexId][course].forEach(group => {
+                const button = document.createElement('button');
+                button.className = 'selector-btn group';
+                button.textContent = group;
+                button.onclick = () => selectGroup(group);
+                container.appendChild(button);
+            });
+        }
+        
+        // Выбор группы
+        function selectGroup(groupName) {
+            // Сохраняем группу
+            userGroup = {
+                complexId: currentSelection.complexId,
+                complexName: currentSelection.complexName,
+                course: currentSelection.course,
+                groupName: groupName,
+                selectedAt: new Date().toISOString()
+            };
+            
+            localStorage.setItem('userGroup', JSON.stringify(userGroup));
+            
+            // Скрываем селектор и показываем информацию о группе
+            hideGroupSelector();
+            updateGroupDisplay();
+            loadScheduleForDay(currentDayOffset, currentWeek);
+            
+            // Показываем уведомление
+            alert(`✅ Группа "${groupName}" выбрана!`);
+        }
+        
+        // Назад к комплексам
+        function backToComplex() {
+            document.getElementById('step-course').classList.remove('active');
+            document.getElementById('step-group').classList.remove('active');
+            document.getElementById('step-complex').classList.add('active');
+        }
+        
+        // Назад к курсам
+        function backToCourse() {
+            document.getElementById('step-group').classList.remove('active');
+            document.getElementById('step-course').classList.add('active');
+        }
+        
+        // Показать селектор группы
+        function showGroupSelector() {
+            document.getElementById('group-info').style.display = 'none';
+            document.getElementById('group-selector').style.display = 'block';
+            backToComplex(); // Начинаем с выбора комплекса
+        }
+        
+        // Скрыть селектор группы
+        function hideGroupSelector() {
+            document.getElementById('group-selector').style.display = 'none';
+        }
+        
+        // Обновить отображение информации о группе
+        function updateGroupDisplay() {
             const groupInfo = document.getElementById('group-info');
-            const noGroupWarning = document.getElementById('no-group-warning');
             const mainTitle = document.getElementById('main-title');
             const subtitle = document.getElementById('subtitle');
             
-            if (userGroupData.group_name) {
-                // Группа выбрана
+            if (userGroup) {
                 groupInfo.style.display = 'block';
-                noGroupWarning.style.display = 'none';
-                document.getElementById('current-group-name').textContent = userGroupData.group_name;
-                mainTitle.innerHTML = `🎓 ${userGroupData.group_name}`;
+                document.getElementById('current-group-name').textContent = userGroup.groupName;
+                mainTitle.textContent = `🎓 ${userGroup.groupName}`;
                 subtitle.textContent = 'Ваше расписание';
             } else {
-                // Группа не выбрана
                 groupInfo.style.display = 'none';
-                noGroupWarning.style.display = 'block';
-                mainTitle.innerHTML = '🎓 Расписание ЮУМК';
-                subtitle.textContent = 'Выберите группу в боте';
+                mainTitle.textContent = '🎓 Расписание ЮУМК';
+                subtitle.textContent = 'Выберите группу';
+                showGroupSelector(); // Автоматически показываем выбор группы если нет выбранной
             }
         }
         
-        // Функция для загрузки реального расписания
-        async function loadRealSchedule(dayOffset, weekType) {
-            if (!userGroupData.gr || !userGroupData.dep) {
-                // Если нет данных о группе, показываем сообщение
-                return [];
-            }
+        // Функции для вкладок
+        function showTab(tabName) {
+            // Скрыть все вкладки
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
             
-            try {
-                // Здесь будет запрос к вашему API для получения реального расписания
-                // Пока используем тестовые данные, адаптированные под группу пользователя
-                return generateScheduleForGroup(dayOffset, weekType, userGroupData.group_name);
-            } catch (error) {
-                console.error('Ошибка загрузки расписания:', error);
-                return generateTestSchedule(dayOffset, weekType);
-            }
-        }
-        
-        // Генерация расписания с учетом группы пользователя
-        function generateScheduleForGroup(dayOffset, weekType, groupName) {
-            // Базовые расписания для разных типов групп
-            const scheduleTemplates = {
-                // Для юридических групп
-                'юридический': {
-                    0: [
-                        { time: "08:30-10:10", subject: "Криминалистика", teacher: "Шваб Е.В.", room: "11404" },
-                        { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А.", room: "11406" },
-                        { time: "12:40-14:20", subject: "ИТ в ПД", teacher: "Гирфанова М.С.", room: "13208" }
-                    ],
-                    1: [
-                        { time: "08:30-10:10", subject: "Гражданское право", teacher: "Велин Д.А.", room: "11406" },
-                        { time: "10:20-12:20", subject: "Физкультура", teacher: "Райсвих В.К.", room: "12201" }
-                    ],
-                    2: [
-                        { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А.", room: "11406" },
-                        { time: "12:40-14:20", subject: "Уголовное право", teacher: "Пургина О.А.", room: "11406" }
-                    ]
-                },
-                // Для технических групп
-                'технический': {
-                    0: [
-                        { time: "08:30-10:10", subject: "Математика", teacher: "Иванова А.П.", room: "2101" },
-                        { time: "10:20-12:20", subject: "Физика", teacher: "Петров С.М.", room: "2103" }
-                    ],
-                    1: [
-                        { time: "08:30-10:10", subject: "Информатика", teacher: "Сидоров В.К.", room: "3205" },
-                        { time: "10:20-12:20", subject: "Черчение", teacher: "Козлова Л.Н.", room: "3207" }
-                    ],
-                    2: [
-                        { time: "10:20-12:20", subject: "Механика", teacher: "Николаев П.С.", room: "4102" }
-                    ]
-                },
-                // Для транспортных групп
-                'транспортный': {
-                    0: [
-                        { time: "08:30-10:10", subject: "Техника транспорта", teacher: "Орлов Д.В.", room: "5101" },
-                        { time: "10:20-12:20", subject: "ПДД", teacher: "Белова М.К.", room: "5103" }
-                    ],
-                    1: [
-                        { time: "08:30-10:10", subject: "Механика", teacher: "Громов С.П.", room: "5105" },
-                        { time: "10:20-12:20", subject: "Электротехника", teacher: "Волков А.Н.", room: "5201" }
-                    ],
-                    2: [
-                        { time: "10:20-12:20", subject: "Техобслуживание", teacher: "Зайцев В.М.", room: "5203" }
-                    ]
+            // Показать выбранную вкладку
+            document.getElementById(tabName).classList.add('active');
+            
+            // Обновить кнопки
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Загрузить данные для вкладки
+            if (tabName === 'schedule') {
+                if (userGroup) {
+                    loadScheduleForDay(currentDayOffset, currentWeek);
                 }
-            };
-            
-            // Определяем тип группы по названию
-            let groupType = 'юридический'; // по умолчанию
-            
-            if (groupName) {
-                const lowerName = groupName.toLowerCase();
-                if (lowerName.includes('тех') || lowerName.includes('инф')) {
-                    groupType = 'технический';
-                } else if (lowerName.includes('транспорт') || lowerName.includes('авто')) {
-                    groupType = 'транспортный';
-                }
+            } else if (tabName === 'homework') {
+                loadHomework();
             }
-            
-            return scheduleTemplates[groupType][dayOffset] || [];
         }
         
-        // Обновленная функция загрузки расписания
-        async function loadScheduleForDay(dayOffset, weekType) {
+        // Функции расписания
+        function selectDay(dayOffset) {
+            if (!userGroup) {
+                alert('Сначала выберите группу!');
+                showGroupSelector();
+                return;
+            }
+            
+            currentDayOffset = dayOffset;
+            
+            document.querySelectorAll('.date-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadScheduleForDay(dayOffset, currentWeek);
+        }
+        
+        function selectWeek(weekType) {
+            if (!userGroup) {
+                alert('Сначала выберите группу!');
+                showGroupSelector();
+                return;
+            }
+            
+            currentWeek = weekType;
+            
+            document.querySelectorAll('.week-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadScheduleForDay(currentDayOffset, currentWeek);
+        }
+        
+        function loadScheduleForDay(dayOffset, weekType) {
+            if (!userGroup) return;
+            
             const scheduleContent = document.getElementById('schedule-content');
             const dayTitle = document.getElementById('day-title');
             
             scheduleContent.innerHTML = '<div class="loading">Загрузка...</div>';
             
-            try {
-                const schedule = await loadRealSchedule(dayOffset, weekType);
+            setTimeout(() => {
+                const schedule = generateScheduleForGroup(dayOffset, weekType, userGroup);
                 const dateText = getDateText(dayOffset, weekType);
                 
                 dayTitle.textContent = dateText;
-                
-                if (!userGroupData.gr || !userGroupData.dep) {
-                    scheduleContent.innerHTML = `
-                        <div class="no-lessons">
-                            <div style="margin-bottom: 10px;">❌ Группа не выбрана</div>
-                            <div style="font-size: 12px; color: #666;">
-                                Вернитесь в бота и выберите группу для просмотра расписания
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
                 
                 if (schedule.length === 0) {
                     scheduleContent.innerHTML = '<div class="no-lessons">🎉 Пар нет!</div>';
@@ -562,53 +713,77 @@
                         <div class="lesson-time">${lesson.time}</div>
                         <div class="lesson-subject">${lesson.subject}</div>
                         <div class="lesson-details">👤 ${lesson.teacher} | 🏫 ${lesson.room}</div>
-                        ${lesson.subgroups ? lesson.subgroups.map(subgroup => `
-                            <div class="lesson-details" style="margin-top: 5px; margin-left: 10px;">
-                                👥 ${subgroup.teacher} | 🏫 ${subgroup.room}
-                            </div>
-                        `).join('') : ''}
-                    </div>
-                `).join('');
-            } catch (error) {
-                scheduleContent.innerHTML = '<div class="no-lessons">❌ Ошибка загрузки расписания</div>';
-            }
-        }
-        
-        function loadWeeklySchedule() {
-            const weekContent = document.getElementById('week-content');
-            weekContent.innerHTML = '<div class="loading">Загрузка недельного расписания...</div>';
-            
-            setTimeout(() => {
-                if (!userGroupData.gr || !userGroupData.dep) {
-                    weekContent.innerHTML = `
-                        <div class="no-lessons">
-                            <div style="margin-bottom: 10px;">❌ Группа не выбрана</div>
-                            <div style="font-size: 12px; color: #666;">
-                                Вернитесь в бота и выберите группу для просмотра расписания
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                const weekSchedule = generateTestWeekSchedule(userGroupData.group_name);
-                
-                weekContent.innerHTML = Object.entries(weekSchedule).map(([dayName, lessons]) => `
-                    <div style="margin-bottom: 20px;">
-                        <div style="font-weight: 600; margin-bottom: 10px; color: #667eea;">${dayName}</div>
-                        ${lessons.length === 0 ? 
-                            '<div class="no-lessons" style="padding: 10px;">Нет пар</div>' :
-                            lessons.map(lesson => `
-                                <div style="background: #f8f9fa; border-radius: 8px; padding: 10px; margin-bottom: 8px;">
-                                    <div style="font-weight: 600; font-size: 12px; color: #667eea;">${lesson.time}</div>
-                                    <div style="font-size: 14px;">${lesson.subject}</div>
-                                    <div style="font-size: 12px; color: #666;">${lesson.teacher}</div>
-                                </div>
-                            `).join('')
-                        }
                     </div>
                 `).join('');
             }, 500);
+        }
+        
+        // Генерация тестового расписания
+        function generateScheduleForGroup(dayOffset, weekType, group) {
+            // Базовые расписания для разных типов групп
+            const scheduleTemplates = {
+                "Юридический комплекс": {
+                    0: [
+                        { time: "08:30-10:10", subject: "Криминалистика", teacher: "Шваб Е.В.", room: "11404" },
+                        { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А.", room: "11406" }
+                    ],
+                    1: [
+                        { time: "08:30-10:10", subject: "Гражданское право", teacher: "Велин Д.А.", room: "11406" },
+                        { time: "10:20-12:20", subject: "Физкультура", teacher: "Райсвих В.К.", room: "12201" }
+                    ],
+                    2: [
+                        { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А.", room: "11406" }
+                    ]
+                },
+                "Транспортно-технологический комплекс": {
+                    0: [
+                        { time: "08:30-10:10", subject: "Техника транспорта", teacher: "Орлов Д.В.", room: "5101" }
+                    ],
+                    1: [
+                        { time: "08:30-10:10", subject: "ПДД", teacher: "Белова М.К.", room: "5103" },
+                        { time: "10:20-12:20", subject: "Механика", teacher: "Громов С.П.", room: "5105" }
+                    ],
+                    2: [
+                        { time: "10:20-12:20", subject: "Электротехника", teacher: "Волков А.Н.", room: "5201" }
+                    ]
+                },
+                "Металлургический комплекс": {
+                    0: [
+                        { time: "08:30-10:10", subject: "Металловедение", teacher: "Стальной В.П.", room: "3101" }
+                    ],
+                    1: [
+                        { time: "10:20-12:20", subject: "Технология металлов", teacher: "Кузнецова Л.М.", room: "3103" }
+                    ],
+                    2: []
+                },
+                "Комплекс строительства и предпринимательства": {
+                    0: [
+                        { time: "08:30-10:10", subject: "Архитектура", teacher: "Проектов А.В.", room: "4101" },
+                        { time: "10:20-12:20", subject: "Черчение", teacher: "Линейкина С.П.", room: "4103" }
+                    ],
+                    1: [
+                        { time: "08:30-10:10", subject: "Строительные материалы", teacher: "Бетонов И.К.", room: "4105" }
+                    ],
+                    2: [
+                        { time: "10:20-12:20", subject: "Экономика", teacher: "Балансов П.Л.", room: "4107" }
+                    ]
+                }
+            };
+            
+            return scheduleTemplates[group.complexName][dayOffset] || [];
+        }
+        
+        function getDateText(dayOffset, weekType) {
+            const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+            const today = new Date();
+            const targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + dayOffset);
+            
+            const dayName = days[targetDate.getDay()];
+            const dateStr = targetDate.toLocaleDateString('ru-RU');
+            const weekText = weekType === 'current' ? 'текущая' : 'следующая';
+            
+            return `${dayName}, ${dateStr} (${weekText} неделя)`;
         }
         
         // Функции домашних заданий
@@ -673,156 +848,8 @@
             }
         }
         
-        // Функции для вкладок
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.getElementById(tabName).classList.add('active');
-            
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            if (tabName === 'schedule') {
-                loadScheduleForDay(currentDayOffset, currentWeek);
-            } else if (tabName === 'homework') {
-                loadHomework();
-            }
-        }
-        
-        function selectDay(dayOffset) {
-            currentDayOffset = dayOffset;
-            document.querySelectorAll('.date-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            showDayView();
-            loadScheduleForDay(dayOffset, currentWeek);
-        }
-        
-        function selectWeek(weekType) {
-            currentWeek = weekType;
-            document.querySelectorAll('.week-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            loadScheduleForDay(currentDayOffset, weekType);
-        }
-        
-        function showDayView() {
-            document.getElementById('week-view').style.display = 'none';
-            document.getElementById('schedule-content').style.display = 'block';
-            document.getElementById('day-title').style.display = 'block';
-        }
-        
         function showWeekView() {
-            document.getElementById('schedule-content').style.display = 'none';
-            document.getElementById('day-title').style.display = 'none';
-            document.getElementById('week-view').style.display = 'block';
-            loadWeeklySchedule();
-        }
-        
-        // Тестовые данные (запасной вариант)
-        function generateTestSchedule(dayOffset, weekType) {
-            const schedules = {
-                0: [
-                    { time: "08:30-10:10", subject: "Криминалистика", teacher: "Шваб Е.В.", room: "11404" },
-                    { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А.", room: "11406" },
-                    { time: "12:40-14:20", subject: "ИТ в ПД", teacher: "Гирфанова М.С.", room: "13208" }
-                ],
-                1: [
-                    { time: "08:30-10:10", subject: "Гражданское право", teacher: "Велин Д.А.", room: "11406" },
-                    { time: "10:20-12:20", subject: "Физкультура", teacher: "Райсвих В.К.", room: "12201" }
-                ],
-                2: [
-                    { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А.", room: "11406" },
-                    { time: "12:40-14:20", subject: "Уголовное право", teacher: "Пургина О.А.", room: "11406" }
-                ]
-            };
-            
-            return schedules[dayOffset] || [];
-        }
-        
-        function generateTestWeekSchedule(groupName) {
-            // Адаптируем тестовое расписание под группу
-            const isTechnical = groupName && groupName.toLowerCase().includes('тех');
-            const isTransport = groupName && groupName.toLowerCase().includes('транспорт');
-            
-            if (isTechnical) {
-                return {
-                    "Понедельник": [
-                        { time: "08:30-10:10", subject: "Математика", teacher: "Иванова А.П." },
-                        { time: "10:20-12:20", subject: "Физика", teacher: "Петров С.М." }
-                    ],
-                    "Вторник": [
-                        { time: "08:30-10:10", subject: "Информатика", teacher: "Сидоров В.К." }
-                    ],
-                    "Среда": [
-                        { time: "10:20-12:20", subject: "Черчение", teacher: "Козлова Л.Н." }
-                    ],
-                    "Четверг": [],
-                    "Пятница": [
-                        { time: "08:30-10:10", subject: "Механика", teacher: "Николаев П.С." }
-                    ],
-                    "Суббота": []
-                };
-            } else if (isTransport) {
-                return {
-                    "Понедельник": [
-                        { time: "08:30-10:10", subject: "Техника транспорта", teacher: "Орлов Д.В." }
-                    ],
-                    "Вторник": [
-                        { time: "08:30-10:10", subject: "ПДД", teacher: "Белова М.К." }
-                    ],
-                    "Среда": [
-                        { time: "10:20-12:20", subject: "Механика", teacher: "Громов С.П." }
-                    ],
-                    "Четверг": [
-                        { time: "08:30-10:10", subject: "Электротехника", teacher: "Волков А.Н." }
-                    ],
-                    "Пятница": [
-                        { time: "10:20-12:20", subject: "Техобслуживание", teacher: "Зайцев В.М." }
-                    ],
-                    "Суббота": []
-                };
-            } else {
-                // Юридическое по умолчанию
-                return {
-                    "Понедельник": [
-                        { time: "08:30-10:10", subject: "Криминалистика", teacher: "Шваб Е.В." },
-                        { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А." }
-                    ],
-                    "Вторник": [
-                        { time: "08:30-10:10", subject: "Гражданское право", teacher: "Велин Д.А." },
-                        { time: "10:20-12:20", subject: "Физкультура", teacher: "Райсвих В.К." }
-                    ],
-                    "Среда": [
-                        { time: "08:30-10:10", subject: "Уголовное право", teacher: "Пургина О.А." }
-                    ],
-                    "Четверг": [
-                        { time: "10:20-12:20", subject: "ИТ в ПД", teacher: "Гирфанова М.С." }
-                    ],
-                    "Пятница": [],
-                    "Суббота": []
-                };
-            }
-        }
-        
-        function getDateText(dayOffset, weekType) {
-            const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-            const today = new Date();
-            const targetDate = new Date(today);
-            targetDate.setDate(today.getDate() + dayOffset);
-            
-            const dayName = days[targetDate.getDay()];
-            const dateStr = targetDate.toLocaleDateString('ru-RU');
-            const weekText = weekType === 'current' ? 'текущая' : 'следующая';
-            
-            return `${dayName}, ${dateStr} (${weekText} неделя)`;
+            alert('Вид на всю неделю будет доступен после настройки API');
         }
     </script>
 </body>
