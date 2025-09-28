@@ -94,6 +94,9 @@
         .selector-buttons {
             display: grid;
             gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 5px;
         }
         
         .selector-btn {
@@ -105,6 +108,7 @@
             font-weight: 600;
             text-align: center;
             transition: all 0.3s;
+            font-size: 14px;
         }
         
         .selector-btn:hover {
@@ -229,6 +233,45 @@
             color: #333;
             font-weight: 600;
         }
+
+        /* Стили для недельного расписания */
+        .week-day {
+            margin-bottom: 20px;
+        }
+
+        .week-day-header {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .week-lesson {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .week-lesson-time {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 12px;
+        }
+
+        .week-lesson-subject {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .week-lesson-details {
+            font-size: 12px;
+            color: #666;
+        }
         
         /* Стили для домашних заданий */
         .homework-item {
@@ -341,6 +384,28 @@
             cursor: pointer;
             font-size: 12px;
         }
+
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .view-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            background: #e9ecef;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .view-btn.active {
+            background: #667eea;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -396,19 +461,36 @@
                     <button class="week-btn active" onclick="selectWeek('current')">Текущая</button>
                     <button class="week-btn" onclick="selectWeek('next')">Следующая</button>
                 </div>
-                
-                <div class="date-selector">
-                    <button class="date-btn active" onclick="selectDay(0)">Сегодня</button>
-                    <button class="date-btn" onclick="selectDay(1)">Завтра</button>
-                    <button class="date-btn" onclick="selectDay(2)">Послезавтра</button>
-                    <button class="date-btn" onclick="showWeekView()">Неделя</button>
+
+                <div class="view-toggle">
+                    <button class="view-btn active" onclick="showDayView()">📅 По дням</button>
+                    <button class="view-btn" onclick="showWeekView()">📊 Вся неделя</button>
                 </div>
                 
-                <div class="day-header" id="day-title">Выберите группу для просмотра расписания</div>
-                
-                <div id="schedule-content">
-                    <div class="no-lessons">
-                        ℹ️ Сначала выберите вашу группу
+                <!-- Вид по дням -->
+                <div id="day-view">
+                    <div class="date-selector">
+                        <button class="date-btn active" onclick="selectDay(0)">Сегодня</button>
+                        <button class="date-btn" onclick="selectDay(1)">Завтра</button>
+                        <button class="date-btn" onclick="selectDay(2)">Послезавтра</button>
+                    </div>
+                    
+                    <div class="day-header" id="day-title">Выберите группу для просмотра расписания</div>
+                    
+                    <div id="schedule-content">
+                        <div class="no-lessons">
+                            ℹ️ Сначала выберите вашу группу
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вид на всю неделю -->
+                <div id="week-view" style="display: none;">
+                    <div class="day-header" id="week-title">Расписание на неделю</div>
+                    <div id="week-content">
+                        <div class="no-lessons">
+                            ℹ️ Сначала выберите вашу группу
+                        </div>
                     </div>
                 </div>
             </div>
@@ -456,37 +538,131 @@
         let currentWeek = 'current';
         let homeworkList = JSON.parse(localStorage.getItem('homeworkList')) || [];
         let userGroup = JSON.parse(localStorage.getItem('userGroup')) || null;
+        let currentSelection = {};
         
-        // Данные для выбора группы (можно расширить)
+        // Полные данные групп (расширенные)
         const complexesData = {
-            "1": { name: "Юридический комплекс", courses: ["1 курс", "2 курс", "3 курс", "4 курс"] },
-            "2": { name: "Транспортно-технологический комплекс", courses: ["1 курс", "2 курс", "3 курс"] },
-            "3": { name: "Металлургический комплекс", courses: ["1 курс", "2 курс", "3 курс"] },
-            "4": { name: "Комплекс строительства и предпринимательства", courses: ["1 курс", "2 курс", "3 курс", "4 курс"] }
+            "1": { 
+                name: "Юридический комплекс", 
+                courses: ["1 курс", "2 курс", "3 курс", "4 курс"] 
+            },
+            "2": { 
+                name: "Транспортно-технологический комплекс", 
+                courses: ["1 курс", "2 курс", "3 курс"] 
+            },
+            "3": { 
+                name: "Металлургический комплекс", 
+                courses: ["1 курс", "2 курс", "3 курс"] 
+            },
+            "4": { 
+                name: "Комплекс строительства и предпринимательства", 
+                courses: ["1 курс", "2 курс", "3 курс", "4 курс"] 
+            }
         };
 
         const groupsData = {
             "1": {
-                "1 курс": ["Ю-101", "Ю-102", "Ю-103"],
-                "2 курс": ["Ю-201", "Ю-202", "Ю-203"],
-                "3 курс": ["Ю-301", "Ю-302"],
-                "4 курс": ["Ю-401", "Ю-402"]
+                "1 курс": ["Ю-101", "Ю-102", "Ю-103", "Ю-104", "Ю-105"],
+                "2 курс": ["Ю-201", "Ю-202", "Ю-203", "Ю-204", "Ю-205"],
+                "3 курс": ["Ю-301", "Ю-302", "Ю-303", "Ю-304"],
+                "4 курс": ["Ю-401", "Ю-402", "Ю-403"]
             },
             "2": {
-                "1 курс": ["ТТ-101", "ТТ-102"],
-                "2 курс": ["ТТ-201", "ТТ-202"],
-                "3 курс": ["ТТ-301"]
+                "1 курс": ["ТТ-101", "ТТ-102", "ТТ-103", "ТТ-104"],
+                "2 курс": ["ТТ-201", "ТТ-202", "ТТ-203", "ТТ-204"],
+                "3 курс": ["ТТ-301", "ТТ-302", "ТТ-303"]
             },
             "3": {
-                "1 курс": ["М-101", "М-102"],
-                "2 курс": ["М-201", "М-202"],
-                "3 курс": ["М-301"]
+                "1 курс": ["М-101", "М-102", "М-103", "М-104"],
+                "2 курс": ["М-201", "М-202", "М-203"],
+                "3 курс": ["М-301", "М-302", "М-303"]
             },
             "4": {
-                "1 курс": ["СП-101", "СП-102", "СП-103"],
-                "2 курс": ["СП-201", "СП-202"],
-                "3 курс": ["СП-301", "СП-302"],
-                "4 курс": ["СП-401"]
+                "1 курс": ["СП-101", "СП-102", "СП-103", "СП-104", "СП-105"],
+                "2 курс": ["СП-201", "СП-202", "СП-203", "СП-204"],
+                "3 курс": ["СП-301", "СП-302", "СП-303"],
+                "4 курс": ["СП-401", "СП-402", "СП-403"]
+            }
+        };
+
+        // Полные данные расписания для недельного просмотра
+        const weeklySchedules = {
+            "Юридический комплекс": {
+                "Понедельник": [
+                    { time: "08:30-10:10", subject: "Криминалистика", teacher: "Шваб Е.В.", room: "11404" },
+                    { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А.", room: "11406" },
+                    { time: "12:40-14:20", subject: "ИТ в ПД", teacher: "Гирфанова М.С.", room: "13208" }
+                ],
+                "Вторник": [
+                    { time: "08:30-10:10", subject: "Гражданское право", teacher: "Велин Д.А.", room: "11406" },
+                    { time: "10:20-12:20", subject: "Физкультура", teacher: "Райсвих В.К.", room: "12201" }
+                ],
+                "Среда": [
+                    { time: "10:20-12:20", subject: "Уголовный процесс", teacher: "Пургина О.А.", room: "11406" },
+                    { time: "12:40-14:20", subject: "Уголовное право", teacher: "Пургина О.А.", room: "11406" }
+                ],
+                "Четверг": [
+                    { time: "08:30-10:10", subject: "Криминалистика", teacher: "Шваб Е.В.", room: "11404" }
+                ],
+                "Пятница": [
+                    { time: "10:20-12:20", subject: "Физкультура", teacher: "Райсвих В.К.", room: "12201" }
+                ],
+                "Суббота": []
+            },
+            "Транспортно-технологический комплекс": {
+                "Понедельник": [
+                    { time: "08:30-10:10", subject: "Техника транспорта", teacher: "Орлов Д.В.", room: "5101" },
+                    { time: "10:20-12:20", subject: "ПДД", teacher: "Белова М.К.", room: "5103" }
+                ],
+                "Вторник": [
+                    { time: "08:30-10:10", subject: "Механика", teacher: "Громов С.П.", room: "5105" },
+                    { time: "10:20-12:20", subject: "Электротехника", teacher: "Волков А.Н.", room: "5201" }
+                ],
+                "Среда": [
+                    { time: "10:20-12:20", subject: "Техобслуживание", teacher: "Зайцев В.М.", room: "5203" }
+                ],
+                "Четверг": [
+                    { time: "08:30-10:10", subject: "ПДД", teacher: "Белова М.К.", room: "5103" }
+                ],
+                "Пятница": [
+                    { time: "10:20-12:20", subject: "Механика", teacher: "Громов С.П.", room: "5105" }
+                ],
+                "Суббота": []
+            },
+            "Металлургический комплекс": {
+                "Понедельник": [
+                    { time: "08:30-10:10", subject: "Металловедение", teacher: "Стальной В.П.", room: "3101" }
+                ],
+                "Вторник": [
+                    { time: "10:20-12:20", subject: "Технология металлов", teacher: "Кузнецова Л.М.", room: "3103" }
+                ],
+                "Среда": [
+                    { time: "08:30-10:10", subject: "Обработка металлов", teacher: "Молотков И.С.", room: "3105" }
+                ],
+                "Четверг": [],
+                "Пятница": [
+                    { time: "10:20-12:20", subject: "Металловедение", teacher: "Стальной В.П.", room: "3101" }
+                ],
+                "Суббота": []
+            },
+            "Комплекс строительства и предпринимательства": {
+                "Понедельник": [
+                    { time: "08:30-10:10", subject: "Архитектура", teacher: "Проектов А.В.", room: "4101" },
+                    { time: "10:20-12:20", subject: "Черчение", teacher: "Линейкина С.П.", room: "4103" }
+                ],
+                "Вторник": [
+                    { time: "08:30-10:10", subject: "Строительные материалы", teacher: "Бетонов И.К.", room: "4105" }
+                ],
+                "Среда": [
+                    { time: "10:20-12:20", subject: "Экономика", teacher: "Балансов П.Л.", room: "4107" }
+                ],
+                "Четверг": [
+                    { time: "08:30-10:10", subject: "Архитектура", teacher: "Проектов А.В.", room: "4101" }
+                ],
+                "Пятница": [
+                    { time: "10:20-12:20", subject: "Строительные материалы", teacher: "Бетонов И.К.", room: "4105" }
+                ],
+                "Суббота": []
             }
         };
         
@@ -553,7 +729,14 @@
             const container = document.getElementById('group-buttons');
             container.innerHTML = '';
             
-            groupsData[currentSelection.complexId][course].forEach(group => {
+            const groups = groupsData[currentSelection.complexId][course] || [];
+            
+            if (groups.length === 0) {
+                container.innerHTML = '<div class="no-lessons">Группы не найдены</div>';
+                return;
+            }
+            
+            groups.forEach(group => {
                 const button = document.createElement('button');
                 button.className = 'selector-btn group';
                 button.textContent = group;
@@ -579,6 +762,7 @@
             hideGroupSelector();
             updateGroupDisplay();
             loadScheduleForDay(currentDayOffset, currentWeek);
+            loadWeeklySchedule();
             
             // Показываем уведомление
             alert(`✅ Группа "${groupName}" выбрана!`);
@@ -626,6 +810,29 @@
                 subtitle.textContent = 'Выберите группу';
                 showGroupSelector(); // Автоматически показываем выбор группы если нет выбранной
             }
+        }
+
+        // Переключение видов
+        function showDayView() {
+            document.getElementById('day-view').style.display = 'block';
+            document.getElementById('week-view').style.display = 'none';
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function showWeekView() {
+            if (!userGroup) {
+                alert('Сначала выберите группу!');
+                showGroupSelector();
+                return;
+            }
+
+            document.getElementById('day-view').style.display = 'none';
+            document.getElementById('week-view').style.display = 'block';
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            loadWeeklySchedule();
         }
         
         // Функции для вкладок
@@ -717,6 +924,55 @@
                 `).join('');
             }, 500);
         }
+
+        // Загрузка недельного расписания
+        function loadWeeklySchedule() {
+            if (!userGroup) return;
+
+            const weekContent = document.getElementById('week-content');
+            const weekTitle = document.getElementById('week-title');
+            
+            weekContent.innerHTML = '<div class="loading">Загрузка недельного расписания...</div>';
+            
+            setTimeout(() => {
+                const weekSchedule = weeklySchedules[userGroup.complexName] || {};
+                const weekText = currentWeek === 'current' ? 'текущей' : 'следующей';
+                
+                weekTitle.textContent = `Расписание на ${weekText} неделю - ${userGroup.groupName}`;
+                
+                let hasLessons = false;
+                let scheduleHTML = '';
+                
+                const daysOrder = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"];
+                
+                daysOrder.forEach(day => {
+                    const lessons = weekSchedule[day] || [];
+                    if (lessons.length > 0) hasLessons = true;
+                    
+                    scheduleHTML += `
+                        <div class="week-day">
+                            <div class="week-day-header">${day}</div>
+                            ${lessons.length === 0 ? 
+                                '<div class="no-lessons" style="padding: 10px; font-size: 14px;">Нет пар</div>' :
+                                lessons.map(lesson => `
+                                    <div class="week-lesson">
+                                        <div class="week-lesson-time">${lesson.time}</div>
+                                        <div class="week-lesson-subject">${lesson.subject}</div>
+                                        <div class="week-lesson-details">${lesson.teacher} | ${lesson.room}</div>
+                                    </div>
+                                `).join('')
+                            }
+                        </div>
+                    `;
+                });
+                
+                if (!hasLessons) {
+                    weekContent.innerHTML = '<div class="no-lessons">🎉 На неделе пар нет!</div>';
+                } else {
+                    weekContent.innerHTML = scheduleHTML;
+                }
+            }, 500);
+        }
         
         // Генерация тестового расписания
         function generateScheduleForGroup(dayOffset, weekType, group) {
@@ -783,7 +1039,7 @@
             const dateStr = targetDate.toLocaleDateString('ru-RU');
             const weekText = weekType === 'current' ? 'текущая' : 'следующая';
             
-            return `${dayName}, ${dateStr} (${weekText} неделя)`;
+            return `${dayName}, ${dateStr} (${weekText} неделя) - ${userGroup.groupName}`;
         }
         
         // Функции домашних заданий
@@ -846,10 +1102,6 @@
                 localStorage.setItem('homeworkList', JSON.stringify(homeworkList));
                 loadHomework();
             }
-        }
-        
-        function showWeekView() {
-            alert('Вид на всю неделю будет доступен после настройки API');
         }
     </script>
 </body>
